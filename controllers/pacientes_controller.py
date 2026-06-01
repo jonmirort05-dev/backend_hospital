@@ -44,9 +44,48 @@ def crear_paciente():
 
     data = request.get_json()
 
+    # VALIDAR CAMPOS OBLIGATORIOS
+    campos_obligatorios = [
+        "nombre",
+        "apellido_paterno",
+        "apellido_materno",
+        "curp",
+        "fecha_nacimiento",
+        "sexo"
+    ]
+
+    for campo in campos_obligatorios:
+        if campo not in data or not data[campo]:
+            return jsonify({
+                "error": f"El campo {campo} es obligatorio"
+            }), 400
+
+    # VALIDAR SEXO
+    if data["sexo"] not in ["M", "F"]:
+        return jsonify({
+            "error": "El sexo debe ser M o F"
+        }), 400
+
     conexion = get_connection()
     cursor = conexion.cursor()
 
+    # VALIDAR CURP DUPLICADA
+    cursor.execute(
+        "SELECT id_paciente FROM paciente WHERE curp = %s",
+        (data["curp"],)
+    )
+
+    existe = cursor.fetchone()
+
+    if existe:
+        cursor.close()
+        conexion.close()
+
+        return jsonify({
+            "error": "La CURP ya está registrada"
+        }), 400
+
+    # INSERTAR PACIENTE
     query = """
     INSERT INTO paciente
     (nombre, apellido_paterno, apellido_materno, curp, fecha_nacimiento, sexo)
@@ -75,6 +114,7 @@ def crear_paciente():
         "mensaje": "Paciente creado",
         "id": nuevo_id
     }), 201
+
 
 # PUT ACTUALIZAR PACIENTE
 def actualizar_paciente(id):

@@ -67,9 +67,91 @@ def obtener_cita(id):
 # POST CREAR CITA
 def crear_cita(data):
 
+    # VALIDAR CAMPOS OBLIGATORIOS
+    campos_obligatorios = [
+        "id_paciente",
+        "id_medico",
+        "fecha",
+        "hora",
+        "motivo"
+    ]
+
+    for campo in campos_obligatorios:
+        if campo not in data or not data[campo]:
+            return jsonify({
+                "error": f"El campo {campo} es obligatorio"
+            }), 400
+
     conexion = get_connection()
     cursor = conexion.cursor()
 
+    # VALIDAR PACIENTE EXISTE
+    cursor.execute(
+        """
+        SELECT id_paciente
+        FROM paciente
+        WHERE id_paciente = %s
+        """,
+        (data["id_paciente"],)
+    )
+
+    paciente = cursor.fetchone()
+
+    if not paciente:
+        cursor.close()
+        conexion.close()
+
+        return jsonify({
+            "error": "El paciente no existe"
+        }), 400
+
+    # VALIDAR MEDICO EXISTE
+    cursor.execute(
+        """
+        SELECT id_medico
+        FROM medico
+        WHERE id_medico = %s
+        """,
+        (data["id_medico"],)
+    )
+
+    medico = cursor.fetchone()
+
+    if not medico:
+        cursor.close()
+        conexion.close()
+
+        return jsonify({
+            "error": "El médico no existe"
+        }), 400
+
+    # VALIDAR HORARIO DISPONIBLE
+    cursor.execute(
+        """
+        SELECT id_cita
+        FROM cita
+        WHERE id_medico = %s
+        AND fecha = %s
+        AND hora = %s
+        """,
+        (
+            data["id_medico"],
+            data["fecha"],
+            data["hora"]
+        )
+    )
+
+    cita_existente = cursor.fetchone()
+
+    if cita_existente:
+        cursor.close()
+        conexion.close()
+
+        return jsonify({
+            "error": "El horario ya está ocupado"
+        }), 400
+
+    # INSERTAR CITA
     query = """
     INSERT INTO cita
     (id_paciente, id_medico, fecha, hora, motivo)
