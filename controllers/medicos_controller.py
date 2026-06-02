@@ -120,9 +120,67 @@ def crear_medico(data):
 # PUT ACTUALIZAR MEDICO
 def actualizar_medico(id, data):
 
+    # VALIDAR CAMPOS OBLIGATORIOS
+    campos_obligatorios = [
+        "nombre",
+        "especialidad",
+        "cedula_profesional"
+    ]
+
+    for campo in campos_obligatorios:
+        if campo not in data or not data[campo]:
+            return jsonify({
+                "error": f"El campo {campo} es obligatorio"
+            }), 400
+
     conexion = get_connection()
     cursor = conexion.cursor()
 
+    # VALIDAR MEDICO EXISTE
+    cursor.execute(
+        """
+        SELECT id_medico
+        FROM medico
+        WHERE id_medico = %s
+        """,
+        (id,)
+    )
+
+    medico = cursor.fetchone()
+
+    if not medico:
+        cursor.close()
+        conexion.close()
+
+        return jsonify({
+            "error": "Médico no encontrado"
+        }), 404
+
+    # VALIDAR CEDULA DUPLICADA
+    cursor.execute(
+        """
+        SELECT id_medico
+        FROM medico
+        WHERE cedula_profesional = %s
+        AND id_medico <> %s
+        """,
+        (
+            data["cedula_profesional"],
+            id
+        )
+    )
+
+    cedula_existente = cursor.fetchone()
+
+    if cedula_existente:
+        cursor.close()
+        conexion.close()
+
+        return jsonify({
+            "error": "La cédula profesional ya está registrada"
+        }), 400
+
+    # ACTUALIZAR MEDICO
     query = """
     UPDATE medico
     SET
@@ -157,18 +215,22 @@ def eliminar_medico(id):
     conexion = get_connection()
     cursor = conexion.cursor()
 
-    query = """
-    DELETE FROM medico
-    WHERE id_medico = %s
-    """
+    query = "DELETE FROM medico WHERE id_medico = %s"
 
     cursor.execute(query, (id,))
 
     conexion.commit()
 
+    filas_afectadas = cursor.rowcount
+
     cursor.close()
     conexion.close()
 
+    if filas_afectadas == 0:
+        return jsonify({
+            "error": "Medico no encontrado"
+        }), 404
+
     return jsonify({
         "mensaje": "Medico eliminado"
-    })
+    })  
