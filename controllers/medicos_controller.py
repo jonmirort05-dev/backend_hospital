@@ -228,9 +228,9 @@ def eliminar_medico(id):
 
     if filas_afectadas == 0:
         return jsonify({
-            "error": "Medico no encontrado"
+            "error": "Médico no encontrado"
         }), 404
 
     return jsonify({
         "mensaje": "Medico eliminado"
-    })  
+    })

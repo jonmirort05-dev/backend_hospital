@@ -341,8 +341,7 @@ def actualizar_cita(id, data):
 
 
 
-
-# DELETE ELIMINAR CITA
+# DELETE CITA
 def eliminar_cita(id):
 
     conexion = get_connection()

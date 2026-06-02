@@ -225,7 +225,9 @@ def actualizar_paciente(id):
     return jsonify({
         "mensaje": "Paciente actualizado"
     })
-# DELETE PACIENTE
+
+
+
 def eliminar_paciente(id):
 
     conexion = get_connection()
